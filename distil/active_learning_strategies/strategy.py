@@ -157,12 +157,12 @@ class Strategy:
                     draw_without_replacement.remove(index)
                 
             if bias_grad:
-                embedding = torch.zeros([num_batches, embDim * nLab])
-            else:
                 embedding = torch.zeros([num_batches, (embDim+1) * nLab])
-                
+            else:
+                embedding = torch.zeros([num_batches, embDim * nLab])
+
             # Use the provided batch size to reduce gradients in batch to one gradient
-            loader_te = DataLoader(self.handler(X),batch_sampler = batch_random_sample)
+            loader_te = DataLoader(self.handler(X),batch_sampler = batch_indices_list)
 
             with torch.no_grad():
                 for i, (x, idxs) in enumerate(loader_te):
@@ -187,7 +187,7 @@ class Strategy:
                     if bias_grad:
                         batch_embedding = torch.cat((l0_grads, l1_grads), dim=1)
                     else:
-                        batch_embedding = embedding[idxs] = l1_grads
+                        batch_embedding = l1_grads
                             
                     # Average this batch's gradient and store in embedding
                     embedding[i] = torch.sum(batch_embedding, dim=0)
