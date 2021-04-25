@@ -193,7 +193,7 @@ class Strategy:
                     embedding[i] = torch.sum(batch_embedding, dim=0)
                 
             # Return the batched gradient embeddings AND the indices contributing to each batch
-            return embedding, batch_random_sample
+            return embedding, batch_indices_list
 
         else:        
             if bias_grad:

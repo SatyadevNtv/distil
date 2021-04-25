@@ -99,7 +99,8 @@ class BADGE(Strategy):
 
         if grad_batch_size is not None:
             gradEmbedding, batch_idxs = self.get_grad_embedding(self.unlabeled_x,bias_grad=False,batch_size=grad_batch_size)
-            chosen_batch = init_centers(gradEmbedding.cpu().numpy(), budget, self.device)
+            adj_budget = math.ceil(budget / grad_batch_size)
+            chosen_batch = init_centers(gradEmbedding.cpu().numpy(), adj_budget, self.device)
             
             # Get actual list of indices by taking apart each batch
             chosen = list()
