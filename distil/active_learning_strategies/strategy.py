@@ -20,6 +20,11 @@ class Strategy:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = args['device']
+            
+        if 'bias_grad' not in args:
+            self.bias_grad = "bias_linear"
+        else:
+            self.bias_grad = args['bias_grad']
 
     def select(self, budget):
         pass
@@ -125,16 +130,20 @@ class Strategy:
 
     # gradient embedding (assumes cross-entropy loss)
     #calculating hypothesised labels within
-    def get_grad_embedding(self,X,Y=None, bias_grad=True):
+    def get_grad_embedding(self,X,Y=None):
         
         embDim = self.model.get_embedding_dim()
-        
+        bias_grad = self.bias_grad
         nLab = self.target_classes
 
-        if bias_grad:
+        if bias_grad == "bias":
+            embedding = torch.zeros([X.shape[0], nLab],device=self.device)
+        elif bias_grad == "linear":
+            embedding = torch.zeros([X.shape[0], (embDim)*nLab],device=self.device)
+        elif bias_grad == "bias_linear":
             embedding = torch.zeros([X.shape[0], (embDim+1)*nLab],device=self.device)
         else:
-            embedding = torch.zeros([X.shape[0], embDim * nLab],device=self.device)
+            raise ValueError("bias_grad must be bias, linear, or bias_linear")
         
         loader_te = DataLoader(self.handler(X),shuffle=False, batch_size = self.args['batch_size'])
 
@@ -152,15 +161,18 @@ class Strategy:
                 y_trn = y_trn.to(self.device).long()
                 outputs.scatter_(1, y_trn.view(-1, 1), 1)
                 l0_grads = data - outputs
-                l0_expand = torch.repeat_interleave(l0_grads, embDim, dim=1)
-                l1_grads = l0_expand * l1.repeat(1, nLab)
                 
+                if bias_grad == "linear" or bias_grad == "bias_linear":
+                    l0_expand = torch.repeat_interleave(l0_grads, embDim, dim=1)
+                    l1_grads = l0_expand * l1.repeat(1, nLab)
+                
+                    if bias_grad == "linear":
+                        embedding[idxs] = l1_grads
+                    else:
+                        embedding[idxs] = torch.cat((l0_grads, l1_grads), dim=1)
+                else:
+                    embedding[idxs] = l0_grads
+
                 if torch.cuda.is_available(): 
                     torch.cuda.empty_cache()
-                
-                if bias_grad:
-                    embedding[idxs] = torch.cat((l0_grads, l1_grads), dim=1)
-                else:
-                    embedding[idxs] = l1_grads
-
         return embedding

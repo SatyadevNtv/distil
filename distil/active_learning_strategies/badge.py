@@ -79,6 +79,9 @@ class BADGE(Strategy):
 
     def __init__(self, X, Y, unlabeled_x, net, handler,nclasses, args):
 
+        if 'bias_grad' not in args:
+            args['bias_grad'] = "linear"
+            
         super(BADGE, self).__init__(X, Y, unlabeled_x, net, handler,nclasses, args)
 
     def select_per_batch(self, budget, batch_size):
@@ -100,7 +103,7 @@ class BADGE(Strategy):
         """
         
         # Compute gradient embeddings of each unlabeled point
-        grad_embedding = self.get_grad_embedding(self.unlabeled_x,bias_grad=False)
+        grad_embedding = self.get_grad_embedding(self.unlabeled_x)
         
         # Calculate number of batches to choose from, embedding dimension, and adjusted budget
         num_batches = math.ceil(grad_embedding.shape[0] / batch_size)
@@ -165,6 +168,6 @@ class BADGE(Strategy):
             List of selected data point indexes with respect to unlabeled_x
         """ 
 
-        gradEmbedding = self.get_grad_embedding(self.unlabeled_x,bias_grad=False)
+        gradEmbedding = self.get_grad_embedding(self.unlabeled_x)
         chosen = init_centers(gradEmbedding.cpu().numpy(), budget, self.device)
         return chosen
