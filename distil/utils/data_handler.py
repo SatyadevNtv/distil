@@ -500,3 +500,32 @@ class DataHandler_STL10(Dataset):
 
     def __len__(self):
         return len(self.X)
+
+class DataHandler_ChestXRayImage(Dataset):
+
+    def __init__(self, X, y=None, select=True, return_index=True, return_dict=False):
+        self.select = select
+        if not self.select:
+            self.X = X
+            self.Y = y
+        else:
+            self.X = X
+        self.return_index = return_index
+        self.return_dict = return_dict
+
+
+    def __getitem__(self, idx):
+        vals = []
+        vals.append(self.X[idx])
+        if not self.select:
+            vals.append(self.Y[idx])
+        if self.return_index:
+            vals.append(idx)
+
+        if self.return_dict:
+            return {"image": vals[0], "label": vals[1]}
+
+        return tuple(vals)
+
+    def __len__(self):
+        return len(self.X)
